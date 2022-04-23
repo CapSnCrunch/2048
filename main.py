@@ -296,13 +296,29 @@ def main():
     b = Board(current_size)
     b.restart()
 
+    # Main loop
     while True:
         clock.tick(10)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
                 pygame.quit()
+
+        # This enables keyboard interaction with arrow keys
+        # Comment it out if you want to test some other form of input
         b.move()
+
+        # ADD NEW INPUT CONDITIONS HERE
+        # Change these conditions to whatever input you would like to test with
+        if False:
+            b.move_left()
+        if False:
+            b.move_right()
+        if False:
+            b.move_up()
+        if False:
+            b.move_down()
+
         redraw_window(win, b)
 
 main()
