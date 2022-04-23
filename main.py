@@ -1,6 +1,7 @@
 import random
 import copy
 import pygame
+from sympy import false
 
 width = 600
 height = 700
@@ -11,21 +12,6 @@ pygame.font.init()
 font = pygame.font.SysFont('Comic Sans MS', 30)
 
 thickness = 50
-
-class AI():
-    def __init__(self, brain = None):
-        self.brain = brain
-    
-    def make_choice(self, board):
-        choice = random.randint(0,3)
-        if choice == 0:
-            board.move_left()
-        if choice == 1:
-            board.move_up()
-        if choice == 2:
-            board.move_right()
-        if choice == 3:
-            board.move_down()
 
 class Board():
     def __init__(self, size = 4, score = 0, array = [], temp = False):
@@ -39,6 +25,7 @@ class Board():
         self.rect = (width / thickness, height - width * ((thickness - 1) / thickness), width * ((thickness - 2) / thickness), width * ((thickness - 2) / thickness))
 
     def add_tile(self):
+        # Adds a tile to the game board (2 with 90% chance and 4 with 10% chance)
         open_spots = []
         for x in range(self.size):
             for y in range(self.size):
@@ -51,6 +38,7 @@ class Board():
         self.array[x][y] = random.choices([2, 4], weights = [0.9, 0.1])[0]
     
     def move(self):
+        # Move the board based on the current key being pressed
         keys = pygame.key.get_pressed()
         
         if keys[pygame.K_LEFT]:
@@ -76,8 +64,10 @@ class Board():
             temp_board.move_down()
             if temp_board.array != self.array:
                 self.move_down()
+        
 
     def move_left(self):
+        # Move the board left, combining tiles as they move
         for row in self.array:
             for x in range(self.size):
                 last_tile = 0
@@ -100,8 +90,11 @@ class Board():
                         break
         if not self.temp:
             self.add_tile()
+        if self.check_loss():
+            self.restart()
 
     def move_right(self):
+        # Move the board right, combining tiles as they move
         for row in self.array:
             row.reverse()
             for x in range(self.size):
@@ -126,8 +119,11 @@ class Board():
             row.reverse()
         if not self.temp:
             self.add_tile()
+        if self.check_loss():
+            self.restart()
 
     def move_up(self):
+        # Move the board up, combining tiles as they move
         for y in range(self.size):
             col = []
             for x in range(self.size):
@@ -155,8 +151,11 @@ class Board():
                 self.array[x][y] = col[x]
         if not self.temp:
             self.add_tile()
+        if self.check_loss():
+            self.restart()
 
     def move_down(self):
+        # Move the board down, combining tiles as they move
         for y in range(self.size):
             col = []
             for x in range(self.size):
@@ -186,6 +185,8 @@ class Board():
                 self.array[x][y] = col[x]
         if not self.temp:
             self.add_tile()
+        if self.check_loss():
+            self.restart()
 
     def draw(self, win):
         # Score
@@ -210,7 +211,19 @@ class Board():
                     textRect.center = (rect[0] + length / 2, rect[1] + length / 2)
                     win.blit(text, textRect)
 
+    def board_full(self):
+        # Check if there are any open spots on the board
+        for row in self.array:
+            if 0 in row:
+                return false
+        return True
+
     def check_loss(self):
+        # We can only lose if every tile is filled so check that first
+        if not self.board_full():
+            return False
+
+        # Check if it is possible to move in any of the four directions
         temp_board = Board(array = copy.deepcopy(self.array))
         temp_board.move_left()
         if temp_board.array != self.array:
@@ -234,6 +247,7 @@ class Board():
         return True
 
     def restart(self):
+        # Create a fresh board and place two starting tiles
         self.score = 0
         self.array = []
         for i in range(self.size):
@@ -246,46 +260,24 @@ class Board():
             print(row)
 
     def color(self, val):
-        '''
-        try:
-            colors = [...]
-            return colors[log_2(val)]
-        except:
-            return (255, 255, 255)
-        '''
-        if val == 0:
-            return (180, 180, 180)
-        if val == 2:
-            return (238, 228, 218)
-        if val == 4:
-            return (237, 224, 200)
-        if val == 8:
-            return (242, 177, 121)
-        if val == 16:
-            return (245, 149, 99)
-        if val == 32:
-            return (246, 124, 95)
-        if val == 64:
-            return (246, 94, 59)
-        if val == 128:
-            return (237, 207, 114)
-        if val == 256:
-            return (237, 204, 97)
-        if val == 512:
-            return (237, 197, 63)
-        if val == 1024:
-            return (237, 197, 63)
-        if val == 2048:
-            return (237, 197, 30)
-        if val == 4096:
-            return (100, 184, 145)
-        if val == 8192:
-            return (56, 140, 100)
-        if val == 16384:
-            return (56, 107, 126)
-        if val == 32768:
-            return (46, 118, 190)
-        return(255, 255, 255)
+        colors = {
+            0: (180, 180, 180),
+            2: (238, 228, 218),
+            4: (237, 224, 200),
+            8: (242, 177, 121),
+            16: (245, 149, 99),
+            32: (246, 124, 95),
+            64: (246, 94, 59),
+            128: (237, 207, 114),
+            256: (237, 204, 97),
+            512: (237, 197, 63),
+            1024: (237, 197, 63),
+            2048: (237, 197, 30),
+            4096: (100, 184, 145),
+            8192: (56, 140, 100),
+            16384: (56, 107, 126),
+        }
+        return colors[val]
 
 def redraw_window(win, board):
     win.fill((255, 255, 255))
@@ -297,16 +289,12 @@ def main():
     
     clock = pygame.time.Clock()
  
-    # Uncomment to have AI 'play' (in quotes because it currently plays randomly lol)
-    # a = AI()
-
+    # Changes grid size
     current_size = 4
 
+    # Creates a board an populates it with 2 starting tiles
     b = Board(current_size)
     b.restart()
-
-    averages = []
-    scores = [[], []]
 
     while True:
         clock.tick(10)
@@ -315,30 +303,6 @@ def main():
                 run = False
                 pygame.quit()
         b.move()
-        try:
-            a.make_choice(b)
-        except:
-            b.move()
-        if b.check_loss():
-
-            '''
-            scores[current_size - 4].append(b.score)
-            print('Games Played :', len(scores[current_size - 4]))
-            print('Current Score :', b.score)
-            print('Current Average Score :', sum(scores[current_size - 4]) / len(scores[current_size - 4]))
-            print('Average Scores', averages)
-            if len(scores[current_size - 4]) == 100:
-                scores.append([])
-                f = open('scores.txt', 'a')
-                f.write('Size (' + str(current_size)+') : ' + str(scores[current_size - 4]) + '\n')
-                f.close()
-                current_size += 1
-                b.size = b.size + 1
-            if current_size == 15:
-                break
-            '''
-
-            b.restart()
         redraw_window(win, b)
 
 main()
